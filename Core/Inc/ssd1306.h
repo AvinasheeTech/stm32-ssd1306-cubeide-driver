@@ -1,3 +1,8 @@
+/* @file  ssd1306.h
+   @brief header file for ssd1306 display basic functions.
+   @author Shyam Jha (Avinashee Tech)
+*/
+
 #ifndef _SSD1306_H_
 #define _SSD1306_H_
 

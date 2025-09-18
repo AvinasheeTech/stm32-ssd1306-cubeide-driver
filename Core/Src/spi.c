@@ -1,3 +1,8 @@
+/* @file  spi.c
+   @brief source file for ssd1306 display based spi functions.
+   @author Shyam Jha (Avinashee Tech)
+*/
+
 #include "spi.h"
 
 #include "main.h"  //Main header :CubeIDE platform

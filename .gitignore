@@ -1,2 +1,4 @@
 Debug/*
 *.launch
+*.cfg
+*.xml

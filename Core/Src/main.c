@@ -1,23 +1,13 @@
-/* USER CODE BEGIN Header */
-/**
-  ******************************************************************************
-  * @file           : main.c
-  * @brief          : Main program body
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2025 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
-/* USER CODE END Header */
+/* @file  main.c
+   @brief this code involves STM32 and SSD1306 oled display implementation
+          with lvgl support.
+   @author Shyam Jha (Avinashee Tech)
+*/
+
+
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "cmsis_os.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -26,6 +16,8 @@
 #include <stdlib.h>
 
 #include "ssd1306.h"
+#include "lvgl.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -41,6 +33,12 @@
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
+#define LV_TICK_PERIOD_MS 1
+#define DISP_BUF_LINES 8   // e.g., 8 lines at a time
+#define BYTES_PER_PIXEL (LV_COLOR_FORMAT_GET_SIZE(LV_COLOR_FORMAT_I1))
+#define DISP_BUF_SIZE (SCREEN_WIDTH * DISP_BUF_LINES)
+#define HW_COLUMNS (128 / 8)
+#define LV_TICK_PERIOD_MS 1
 
 /* USER CODE END PM */
 
@@ -49,6 +47,7 @@ SPI_HandleTypeDef hspi1;
 
 TIM_HandleTypeDef htim2;
 
+osThreadId guiHandle;
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -58,6 +57,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_TIM2_Init(void);
+
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -65,6 +65,23 @@ static void MX_TIM2_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+extern const lv_img_dsc_t moustacheman_bmp;
+extern const lv_img_dsc_t hatwomen_bmp;
+extern const lv_img_dsc_t building_bmp;
+extern const lv_img_dsc_t animal_bmp;
+extern const lv_img_dsc_t flower_bmp;
+
+//tick count variable
+volatile int tick = 0;
+
+/*function declarations*/
+void guiTask(void const * pvParameter);
+void oled_flush_cb(struct _lv_disp_drv_t * disp_drv, const lv_area_t * area, lv_color_t * color_p);
+void oled_set_px_cb(struct _lv_disp_drv_t * disp_drv, uint8_t * buf, lv_coord_t buf_w, lv_coord_t x, lv_coord_t y, lv_color_t color, lv_opa_t opa);
+void oled_rounder_cb(struct _lv_disp_drv_t * disp_drv, lv_area_t *a);
+void flush_one_row(unsigned int address, uint8_t *buf, int linelen);
+void lvgl_display_handler(int ms);
+static void lv_tick_task(void);
 /* USER CODE END 0 */
 
 /**
@@ -110,45 +127,39 @@ int main(void)
   // Clear the buffer
   oled_clearDisplay();
 
-  // Draw a single pixel in white
-  oled_drawPixel(10,10,SSD1306_WHITE);
-
-  // Draw character H in white
-  // Draw a single pixel in white
-  oled_drawPixel(100,30,SSD1306_WHITE);
-  oled_drawPixel(100,31,SSD1306_WHITE);
-  oled_drawPixel(100,32,SSD1306_WHITE);
-  oled_drawPixel(100,33,SSD1306_WHITE);
-  oled_drawPixel(100,34,SSD1306_WHITE);
-  oled_drawPixel(100,35,SSD1306_WHITE);
-  oled_drawPixel(100,36,SSD1306_WHITE);
-  oled_drawPixel(100,37,SSD1306_WHITE);
-  oled_drawPixel(100,38,SSD1306_WHITE);
-  oled_drawPixel(100,39,SSD1306_WHITE);
-  oled_drawPixel(100,40,SSD1306_WHITE);
-  oled_drawPixel(101,35,SSD1306_WHITE);
-  oled_drawPixel(102,35,SSD1306_WHITE);
-  oled_drawPixel(103,35,SSD1306_WHITE);
-  oled_drawPixel(104,35,SSD1306_WHITE);
-  oled_drawPixel(105,35,SSD1306_WHITE);
-  oled_drawPixel(106,35,SSD1306_WHITE);
-  oled_drawPixel(107,30,SSD1306_WHITE);
-  oled_drawPixel(107,31,SSD1306_WHITE);
-  oled_drawPixel(107,32,SSD1306_WHITE);
-  oled_drawPixel(107,33,SSD1306_WHITE);
-  oled_drawPixel(107,34,SSD1306_WHITE);
-  oled_drawPixel(107,35,SSD1306_WHITE);
-  oled_drawPixel(107,36,SSD1306_WHITE);
-  oled_drawPixel(107,37,SSD1306_WHITE);
-  oled_drawPixel(107,38,SSD1306_WHITE);
-  oled_drawPixel(107,39,SSD1306_WHITE);
-  oled_drawPixel(107,40,SSD1306_WHITE);
-
-  // Display on screen
-  oled_display();
 
 
   /* USER CODE END 2 */
+
+  /* USER CODE BEGIN RTOS_MUTEX */
+  /* add mutexes, ... */
+  /* USER CODE END RTOS_MUTEX */
+
+  /* USER CODE BEGIN RTOS_SEMAPHORES */
+  /* add semaphores, ... */
+  /* USER CODE END RTOS_SEMAPHORES */
+
+  /* USER CODE BEGIN RTOS_TIMERS */
+  /* start timers, add new ones, ... */
+  /* USER CODE END RTOS_TIMERS */
+
+  /* USER CODE BEGIN RTOS_QUEUES */
+  /* add queues, ... */
+  /* USER CODE END RTOS_QUEUES */
+
+  /* Create the thread(s) */
+  /* definition and creation of gui */
+  osThreadDef(gui, guiTask, osPriorityNormal, 0, 2000);
+  guiHandle = osThreadCreate(osThread(gui), NULL);
+
+  /* USER CODE BEGIN RTOS_THREADS */
+  /* add threads, ... */
+  /* USER CODE END RTOS_THREADS */
+
+  /* Start scheduler */
+  osKernelStart();
+
+  /* We should never get here as control is now taken by the scheduler */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
@@ -317,7 +328,224 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
+/**
+ * @brief  task for GUI operation
+ * @param  argument default task parameters
+ * @retval None
+ * @note   takes care of LVGL initialization and Displays Text
+ *         and Images chosen. (UI also)
+ */
+void guiTask(void const * pvParameter)
+{
+	//initialize LVGL
+	lv_init();
+
+	//create buffer for display data
+	printf("buf size-%d\n",DISP_BUF_SIZE * sizeof(lv_color_t));
+	lv_color_t* buf1 = malloc(DISP_BUF_SIZE * sizeof(lv_color_t));
+	assert(buf1 != NULL);
+	lv_color_t *buf2 = NULL;
+
+
+	static lv_disp_draw_buf_t draw_buf;
+	lv_disp_draw_buf_init(&draw_buf, buf1, buf2, DISP_BUF_SIZE);
+
+	lv_disp_drv_t disp_drv;
+	lv_disp_drv_init(&disp_drv);
+	disp_drv.hor_res = SCREEN_WIDTH;
+	disp_drv.ver_res = SCREEN_HEIGHT;
+	disp_drv.draw_buf = &draw_buf;
+	disp_drv.flush_cb = oled_flush_cb;
+	disp_drv.set_px_cb = oled_set_px_cb;
+	disp_drv.rounder_cb = oled_rounder_cb;
+
+	lv_disp_t * disp;
+	disp = lv_disp_drv_register(&disp_drv);
+
+	/*Display Text*/
+	lv_obj_t * scr = lv_disp_get_scr_act(disp);
+	lv_obj_t* text_label = lv_label_create(scr);
+	lv_label_set_text(text_label,"AVINASHEE");
+	lv_obj_align(text_label,LV_ALIGN_CENTER,0,-5);
+	lvgl_display_handler(2000);
+
+	lv_obj_t* text_label_bottom = lv_label_create(scr);
+	lv_label_set_text(text_label_bottom,"TECH");
+	lv_obj_align(text_label_bottom,LV_ALIGN_CENTER,0,5);
+	lvgl_display_handler(10000);
+
+	/*Display Images*/
+	lv_obj_t* img = lv_img_create(scr);
+
+	lv_img_set_src(img, &moustacheman_bmp);  //moustacheman image
+	lvgl_display_handler(10000);
+
+	lv_img_set_src(img, &hatwomen_bmp);      //hatwoman image
+	lvgl_display_handler(10000);
+
+	lv_img_set_src(img, &building_bmp);      //skyscraper image
+	lvgl_display_handler(10000);
+
+	lv_img_set_src(img, &animal_bmp);        //tiger image
+	lvgl_display_handler(10000);
+
+	lv_img_set_src(img, &flower_bmp);        //rose image
+	lvgl_display_handler(10000);
+
+	// after showing image delete object
+	lv_obj_del(img);
+
+	/*Display Text*/
+	lv_label_set_text(text_label,"TO BE");
+	lv_obj_align(text_label,LV_ALIGN_CENTER,0,-5);
+
+	lv_label_set_text(text_label_bottom,"CONTINUED..");
+	lv_obj_align(text_label_bottom,LV_ALIGN_CENTER,0,5);
+	lvgl_display_handler(10000);
+
+   /* Infinite loop */
+    for(;;)
+    {
+    	lv_task_handler();
+    }
+
+    /* A task should NEVER return */
+	free(buf1);
+}
+
+/**
+ * @brief  helper function to handle lvgl task in background
+ * @param  ms millisecond to wait
+ * @retval None
+ */
+void lvgl_display_handler(int ms){
+    int current_tick = tick;
+    while(abs(tick-current_tick)<ms){
+        lv_task_handler();
+    }
+}
+
+/**
+ * @brief  lvgl flush callback for ssd1306 oled
+ * @param  disp_drv display driver pointer
+ * @param  area display area to update
+ * @param  color_p pixel data to be updated
+ * @retval None
+ * @note   this callback function is called after set_px_cb has prepared 1 bit/pixel
+ *         buffer data.
+ */
+void oled_flush_cb(struct _lv_disp_drv_t * disp_drv, const lv_area_t * area, lv_color_t * color_p)
+{
+    int row = area->y1, col;
+    uint8_t *buffer;
+    int linelen = (area->x2 - area->x1)/8;
+    buffer = (uint8_t*) color_p;
+
+    for (row = area->y1; row <= area->y2; row++) {
+        unsigned int address = (unsigned int)row * HW_COLUMNS + area->x1/8;
+        flush_one_row(address, buffer, linelen);
+        buffer += linelen+1;
+    }
+
+
+    oled_display();
+    lv_disp_flush_ready(disp_drv);
+}
+
+/**
+ * @brief  lvgl set pixel callback for ssd1306 oled
+ * @param  disp_drv display driver pointer
+ * @param  buf  display data buffer
+ * @param  buf_w display width
+ * @param  x display x co-ordinates
+ * @param  y display y co-ordinates
+ * @param  color 8bit color value
+ * @param  opa opacity value
+ * @retval None
+ * @note   converts 8 bit/pixel color value into 1 bit/pixel based on
+ *         display buffer value.
+ */
+void oled_set_px_cb(struct _lv_disp_drv_t * disp_drv, uint8_t * buf, lv_coord_t buf_w, lv_coord_t x, lv_coord_t y, lv_color_t color, lv_opa_t opa)
+{
+    buf += buf_w/8 * y;
+    buf += x/8;
+    if(lv_color_brightness(color) > 128) {(*buf) |= (1 << (7 - x % 8));}
+    else {(*buf) &= ~(1 << (7 - x % 8));}
+
+}
+
+/**
+ * @brief  rounds or adjust the dimension of display data buffer
+ * @param  disp_drv display driver pointer
+ * @param  a display area
+ * @retval None
+ * @note   useful in adjusting data buffer boundary for proper update.
+ */
+void oled_rounder_cb(struct _lv_disp_drv_t * disp_drv, lv_area_t *a)
+{
+    a->x1 = a->x1 & ~(0x7);  //Round Down
+    a->x2 = a->x2 |  (0x7);  //Round Up
+}
+
+/**
+ * @brief  function to update display pixel data
+ * @param  address display data buffer index address
+ * @param  buf display data buffer
+ * @param  linelen number of bytes to update
+ * @retval None
+ * @note   this function is called from within flush callback, and
+ *         then writes spi buffer for respective display pixels.
+ */
+void flush_one_row(unsigned int address, uint8_t *buf, int linelen)
+{
+    for (int byte_idx = 0; byte_idx < linelen; byte_idx++) {
+        uint8_t data = buf[byte_idx];
+        for (int bit = 0; bit < 8; bit++) {
+            int x = (address % HW_COLUMNS) * 8 + bit;
+            int y = address / HW_COLUMNS;
+            uint16_t ssd_color = (data & 0x80) ? 1 : 0;
+            data = data<<1;
+            oled_drawPixel(x, y, ssd_color);
+        }
+        address++;
+    }
+}
+
+/**
+ * @brief  tick interrupt ISR
+ * @param  arg argument
+ * @retval None
+ * @note   periodically updates tick value and calls lv_tick_inc
+ */
+static void lv_tick_task(void) {
+    tick++;
+    lv_tick_inc(LV_TICK_PERIOD_MS);
+}
+
 /* USER CODE END 4 */
+
+/**
+  * @brief  Period elapsed callback in non blocking mode
+  * @note   This function is called  when TIM1 interrupt took place, inside
+  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
+  * a global variable "uwTick" used as application time base.
+  * @param  htim : TIM handle
+  * @retval None
+  */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  /* USER CODE BEGIN Callback 0 */
+
+  /* USER CODE END Callback 0 */
+  if (htim->Instance == TIM1)
+  {
+    HAL_IncTick();
+    lv_tick_task();
+  }
+  /* USER CODE BEGIN Callback 1 */
+
+  /* USER CODE END Callback 1 */
+}
 
 /**
   * @brief  This function is executed in case of error occurrence.

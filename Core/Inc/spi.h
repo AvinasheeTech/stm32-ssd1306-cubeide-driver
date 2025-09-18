@@ -1,3 +1,8 @@
+/* @file  spi.h
+   @brief header file for ssd1306 display based spi functions.
+   @author Shyam Jha (Avinashee Tech)
+*/
+
 #ifndef _SPI_H_
 #define _SPI_H_
 

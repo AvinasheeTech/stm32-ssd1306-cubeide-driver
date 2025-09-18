@@ -1,3 +1,8 @@
+/* @file  ssd1306.c
+   @brief source file for ssd1306 display basic functions.
+   @author Shyam Jha (Avinashee Tech)
+*/
+
 #include "ssd1306.h"
 #include "spi.h"
 

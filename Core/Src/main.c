@@ -17,7 +17,7 @@
 
 #include "ssd1306.h"
 #include "lvgl.h"
-
+#include "ui.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -74,6 +74,11 @@ extern const lv_img_dsc_t flower_bmp;
 //tick count variable
 volatile int tick = 0;
 
+static int hour = 7;
+static int minute = 30;
+static int second = 0;
+
+
 /*function declarations*/
 void guiTask(void const * pvParameter);
 void oled_flush_cb(struct _lv_disp_drv_t * disp_drv, const lv_area_t * area, lv_color_t * color_p);
@@ -82,6 +87,7 @@ void oled_rounder_cb(struct _lv_disp_drv_t * disp_drv, lv_area_t *a);
 void flush_one_row(unsigned int address, uint8_t *buf, int linelen);
 void lvgl_display_handler(int ms);
 static void lv_tick_task(void);
+void update_clock(lv_timer_t * timer);
 /* USER CODE END 0 */
 
 /**
@@ -362,50 +368,28 @@ void guiTask(void const * pvParameter)
 	lv_disp_t * disp;
 	disp = lv_disp_drv_register(&disp_drv);
 
-	/*Display Text*/
-	lv_obj_t * scr = lv_disp_get_scr_act(disp);
-	lv_obj_t* text_label = lv_label_create(scr);
-	lv_label_set_text(text_label,"AVINASHEE");
-	lv_obj_align(text_label,LV_ALIGN_CENTER,0,-5);
-	lvgl_display_handler(2000);
-
-	lv_obj_t* text_label_bottom = lv_label_create(scr);
-	lv_label_set_text(text_label_bottom,"TECH");
-	lv_obj_align(text_label_bottom,LV_ALIGN_CENTER,0,5);
-	lvgl_display_handler(10000);
-
-	/*Display Images*/
-	lv_obj_t* img = lv_img_create(scr);
-
-	lv_img_set_src(img, &moustacheman_bmp);  //moustacheman image
-	lvgl_display_handler(10000);
-
-	lv_img_set_src(img, &hatwomen_bmp);      //hatwoman image
-	lvgl_display_handler(10000);
-
-	lv_img_set_src(img, &building_bmp);      //skyscraper image
-	lvgl_display_handler(10000);
-
-	lv_img_set_src(img, &animal_bmp);        //tiger image
-	lvgl_display_handler(10000);
-
-	lv_img_set_src(img, &flower_bmp);        //rose image
-	lvgl_display_handler(10000);
-
-	// after showing image delete object
-	lv_obj_del(img);
-
-	/*Display Text*/
-	lv_label_set_text(text_label,"TO BE");
-	lv_obj_align(text_label,LV_ALIGN_CENTER,0,-5);
-
-	lv_label_set_text(text_label_bottom,"CONTINUED..");
-	lv_obj_align(text_label_bottom,LV_ALIGN_CENTER,0,5);
-	lvgl_display_handler(10000);
+    /*ui init*/
+	ui_init();
+	lv_timer_create(update_clock,1000,NULL); //1s period timer
 
    /* Infinite loop */
     for(;;)
     {
+        /*update clock variables*/
+    	static char clock_buffer[4] = {0};
+
+		memset(clock_buffer,0,sizeof(clock_buffer));
+		sprintf(clock_buffer,"%02d",hour);
+		lv_label_set_text(ui_Label1,clock_buffer);
+
+		memset(clock_buffer,0,sizeof(clock_buffer));
+		sprintf(clock_buffer,"%02d",minute);
+		lv_label_set_text(ui_Label2,clock_buffer);
+
+		memset(clock_buffer,0,sizeof(clock_buffer));
+		sprintf(clock_buffer,"%02d",second);
+		lv_label_set_text(ui_Label3,clock_buffer);
+
     	lv_task_handler();
     }
 
@@ -413,6 +397,30 @@ void guiTask(void const * pvParameter)
 	free(buf1);
 }
 
+/**
+ * @brief  function to update UI periodically
+ * @param  timer timer descriptor
+ * @retval None
+ * @note   updates hour, minute and seconds value from the default set variable
+ *         defined on the top.
+ */
+void update_clock(lv_timer_t * timer){
+    second++;
+    if(second>=60){
+        minute++;
+        second=0;
+    }
+    if(minute>=60){
+        hour++;
+        minute=0;
+    }
+    if(hour>=24){
+        hour=0;
+    }
+
+
+
+}
 /**
  * @brief  helper function to handle lvgl task in background
  * @param  ms millisecond to wait

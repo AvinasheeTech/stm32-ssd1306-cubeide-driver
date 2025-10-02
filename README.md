@@ -8,7 +8,7 @@
 </h1>
 
 <h3 align="center">
-	Minimal SSD1306 Graphics Driver for STM32
+	LVGL UI on STM32
 </h3>
 
 
@@ -17,18 +17,14 @@
   
 ## 📝 Overview
 
-This repository provides a platform-independent driver for the SSD1306 OLED display controller available in the SSD1306_OLED_common/
-folder, tailored for STM32 using STM32CubeIDE.
-The implementation focuses on delivering a clean, modular, and reusable codebase that can serve as a foundation for simple graphics rendering and advanced GUI integrations.
+This release captures the milestone where we successfully integrated UI using SquareLine Studio and LVGL v8.4.0 with the STM32 (STM32CubeIDE) environment to display a clock like UI on the SSD1306 OLED. The implementation focuses on delivering a clean, modular, and reusable codebase of LVGL for different controllers. Our approach throughout the display series was to make reusable code.
 
-The driver supports basic pixel-level drawing, and buffer management at the moment. It is designed with portability in mind, 
-making it easier to adapt the same code structure for other platforms (such as ESP32 or different MCUs) without major changes.
+We Implemented FreeRTOS guiTask to handle LVGL and UI initialization, buffers, and drivers. Later we updated UI panels clock value in realtime.
 
-This project represents the first stage of the SSD1306 + STM32 integration: building a standalone driver.
-Future work includes adding LVGL support and expanding higher-level graphics functionality.
+This project represents the third stage of the SSD1306 + STM32 integration: building a UI setup and displaying Time, Day and Date like a Clock similar to our ESP32 approach and can be easily replicated to other controllers as well. To understand basics of LVGL, SquareLine Studio, code structure, do refer to our videos on YouTube.
 
 Reference taken from Adafruit SSD1306 library - https://github.com/adafruit/Adafruit_SSD1306  
-Platform used for firmware development is STM32CubeIDE v1.18.1  
+Platform used for firmware development is STM32CubeIDE v1.18.1, LVGL 8.4.0 and SquareLine Stuido 1.15.2.  
 Learn more about this series 👇👇  
   
 Part 1 👇  
@@ -40,6 +36,11 @@ Part 2.1 👇
 Part 2.3 👇  
 [![STM32_SSD1306_PART2_3_Youtube Video](img/oledpt2.3thumbnail.png)](https://youtu.be/BlbK9RoPh0g)  
 
+Part 3.1 👇  
+[![STM32_SSD1306_PART3_1_Youtube Video](img/oledpt3.1thumbnail.png)](https://youtu.be/Ke5_fm0Cos)  
+
+Part 4.2 👇  
+[![STM32_SSD1306_PART4_2_Youtube Video](img/oledpt4.2thumbnail.png)](https://youtu.be/PwL7o8OogUw)
   
 ## ✔️ Requirements
 
@@ -51,6 +52,9 @@ Part 2.3 👇
 
 ### 📂 Software
 - STM32CubeIDE (https://www.st.com/en/development-tools/stm32cubeide.html)  
+- LVGL 8.4.0 (https://github.com/lvgl/lvgl/releases/tag/v8.4.0)
+- SquareLine Studio (https://squareline.io/downloads)
+
 
 ## 🛠️ Installation and usage
 

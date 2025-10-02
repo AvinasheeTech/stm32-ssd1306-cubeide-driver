@@ -37,7 +37,7 @@ Part 2.3 👇
 [![STM32_SSD1306_PART2_3_Youtube Video](img/oledpt2.3thumbnail.png)](https://youtu.be/BlbK9RoPh0g)  
 
 Part 3.1 👇  
-[![STM32_SSD1306_PART3_1_Youtube Video](img/oledpt3.1thumbnail.png)](https://youtu.be/Ke5_fm0Cos)  
+[![STM32_SSD1306_PART3_1_Youtube Video](img/oledpt3.1thumbnail.png)](https://youtu.be/Ke5_fm0Cosw)  
 
 Part 4.2 👇  
 [![STM32_SSD1306_PART4_2_Youtube Video](img/oledpt4.2thumbnail.png)](https://youtu.be/PwL7o8OogUw)
